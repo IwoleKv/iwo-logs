@@ -1,0 +1,7 @@
+name: iwo-logs
+version: '${version}'
+main: io.github.iwologs.Iwo_logs
+api-version: '1.19'
+commands:
+    siema:
+      description: dupa
