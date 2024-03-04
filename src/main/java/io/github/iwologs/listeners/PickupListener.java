@@ -1,74 +1,79 @@
 package io.github.iwologs.listeners;
 
-import io.github.iwologs.options.Strings;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
-import org.bukkit.event.player.PlayerPickupItemEvent;
 import org.bukkit.event.Listener;
+import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.ChatColor;
-import java.util.regex.Matcher;
+import org.jetbrains.annotations.Nullable;
+
+import java.util.List;
+import java.util.Objects;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 public class PickupListener implements Listener {
 
+    private static final LegacyComponentSerializer SERIALIZER = LegacyComponentSerializer.legacyAmpersand();
+    private static final Pattern ENCHANTMENT_PATTERN = Pattern.compile("Enchantment\\[minecraft:(.*?),.*?]=(\\d+)");
+
     @EventHandler
-    public void onPlayerPickupItem(PlayerPickupItemEvent event) {
+    public void onPlayerPickupItem(EntityPickupItemEvent event) {
+        if (!(event.getEntity() instanceof Player player)) return;
+
         ItemStack item = event.getItem().getItemStack();
         ItemMeta meta = item.getItemMeta();
-        Player player = event.getPlayer();
+        if (meta == null) return;
 
-        String Prefix = Strings.PREFIX;
-        String world = player.getWorld().getName();
-        int x = (int) player.getLocation().getX();
-        int y = (int) player.getLocation().getY();
-        int z = (int) player.getLocation().getZ();
+        String name = getName(meta, item);
+        String lore = getLore(meta);
+        String enchantments = getFormattedEnchantments(item);
+        String message = buildMessage(player, name, lore, enchantments, item.getType().name(), meta);
 
-        if (meta != null) {
-            String name = meta.getDisplayName();
-            String nametype = meta.getDisplayName();
+        player.sendMessage(SERIALIZER.deserialize(message));
+    }
 
-            if (name == null || name.isEmpty()) {
-                name = item.getType().name();
-            }
+    private String getName(ItemMeta meta, ItemStack item) {
+        return meta.hasDisplayName() ? SERIALIZER.serialize(meta.displayName()) : item.getType().name();
+    }
 
-            String enchantments = item.getEnchantments().isEmpty() ? "" : item.getEnchantments().toString();
-            Pattern pattern = Pattern.compile("Enchantment\\[minecraft:(.*?),.*?\\]=(\\d+)");
-            Matcher matcher = pattern.matcher(enchantments);
+    private String getLore(ItemMeta meta) {
+        @Nullable List<Component> loreComponents = meta.lore();
+        if (loreComponents == null || loreComponents.isEmpty()) return "";
+        return loreComponents.stream()
+                .map(SERIALIZER::serialize)
+                .collect(Collectors.joining(", "))
+                .replaceAll("&.", "");
+    }
 
-            StringBuilder formattedEnchantments = new StringBuilder();
-            String itemTypeName = item.getType().name();
+    private String getFormattedEnchantments(ItemStack item) {
+        if (item.getEnchantments().isEmpty()) return "";
+        return item.getEnchantments().keySet().stream()
+                .map(enchantment -> {
+                    String enchantmentName = enchantment.getKey().getKey();
+                    Integer level = item.getEnchantments().get(enchantment);
+                    return formatEnchantmentName(enchantmentName) + " " + level;
+                })
+                .collect(Collectors.joining(", "));
+    }
 
-            while (matcher.find()) {
-                String enchantmentName = matcher.group(1);
-                String enchantmentLevel = matcher.group(2);
-                String formattedEnchantment = enchantmentName.substring(0, 1).toUpperCase() + enchantmentName.substring(1) + " " + enchantmentLevel;
-                formattedEnchantments.append(formattedEnchantment).append(", ");
-            }
+    private String formatEnchantmentName(String enchantmentName) {
+        return ENCHANTMENT_PATTERN.matcher(enchantmentName).replaceAll(matchResult ->
+                matchResult.group(1).substring(0, 1).toUpperCase() + matchResult.group(1).substring(1)
+        );
+    }
 
-            if (formattedEnchantments.length() > 0) {
-                formattedEnchantments.setLength(formattedEnchantments.length() - 2);
-            }
-
-            String lore = meta.hasLore() ? String.join(", ", meta.getLore()) : "";
-            lore = lore.replaceAll("§.", "");
-            name = name.replaceAll("§.", "");
-
-            String formattedEnchantmentsString = formattedEnchantments.toString();
-            formattedEnchantmentsString = formattedEnchantmentsString.replace("§", "");
-
-            String message = "\n&f" +
-                    "&8&m--------" + "&x&f&f&9&c&e&e&lIwoLogs" + "&8&m--------" + "\n&f" +
-                    "\n &8» &x&f&f&9&c&e&eGRACZ: &8[&f" + player.getName() + "&8]\n" +
-                    (nametype == null || nametype.isEmpty() ? "" : " &8» &x&f&f&9&c&e&eNAZWA: &8[&f" + name + "&8]\n") +
-                    (!meta.hasLore() ? "" : " &8» &x&f&f&9&c&e&eOPIS: &8[&f" + lore + "&8]\n") +
-                    (item.getEnchantments().isEmpty() ? "" : " &8» &x&f&f&9&c&e&eENCHANT: &8[&f" + formattedEnchantmentsString + "&8]\n") +
-                    " &8» &x&f&f&9&c&e&eITEM: &8[&f" + itemTypeName + "&8]\n" +
-                    " &8» &x&f&f&9&c&e&eŚWIAT: &8[&f" + world + "&8]\n" +
-                    " &8» &x&f&f&9&c&e&eKORDY: &8[&fx: " + x + ", y: " + y + ", z: " + z + "&8]";
-
-            event.getPlayer().sendMessage(ChatColor.translateAlternateColorCodes('&', message));
-        }
+    private String buildMessage(Player player, String name, String lore, String enchantments, String itemTypeName, ItemMeta meta) {
+        return String.format("\n&f&8&m--------&x&f&f&9&c&e&e&lIwoLogs&8&m--------\n&f\n &8» &x&f&f&9&c&e&eGRACZ: &8[&f%s&8]\n%s%s%s &8» &x&f&f&9&c&e&eITEM: &8[&f%s&8]\n &8» &x&f&f&9&c&e&eŚWIAT: &8[&f%s&8]\n &8» &x&f&f&9&c&e&eKORDY: &8[&fx: %d, y: %d, z: %d&8]",
+                player.getName(),
+                !meta.hasDisplayName() ? "" : " &8» &x&f&f&9&c&e&eNAZWA: &8[&f" + name + "&8]\n",
+                lore.isEmpty() ? "" : " &8» &x&f&f&9&c&e&eOPIS: &8[&f" + lore + "&8]\n",
+                enchantments.isEmpty() ? "" : " &8» &x&f&f&9&c&e&eENCHANT: &8[&f" + enchantments + "&8]\n",
+                itemTypeName,
+                player.getWorld().getName(),
+                (int) player.getLocation().getX(), (int) player.getLocation().getY(), (int) player.getLocation().getZ());
     }
 }
