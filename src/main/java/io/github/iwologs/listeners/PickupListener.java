@@ -11,7 +11,6 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
-import java.util.Objects;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -67,13 +66,15 @@ public class PickupListener implements Listener {
     }
 
     private String buildMessage(Player player, String name, String lore, String enchantments, String itemTypeName, ItemMeta meta) {
-        return String.format("\n&f&8&m--------&x&f&f&9&c&e&e&lIwoLogs&8&m--------\n&f\n &8» &x&f&f&9&c&e&eGRACZ: &8[&f%s&8]\n%s%s%s &8» &x&f&f&9&c&e&eITEM: &8[&f%s&8]\n &8» &x&f&f&9&c&e&eŚWIAT: &8[&f%s&8]\n &8» &x&f&f&9&c&e&eKORDY: &8[&fx: %d, y: %d, z: %d&8]",
-                player.getName(),
+        String messageFormat = "\n&f&8&m--------&x&f&f&9&c&e&e&lIwoLogs&8&m--------\n&f\n"
+                + " &8» &x&f&f&9&c&e&eGRACZ: &8[&f%s&8]\n%s%s%s &8» &x&f&f&9&c&e&eITEM: &8[&f%s&8]\n"
+                + " &8» &x&f&f&9&c&e&eŚWIAT: &8[&f%s&8]\n &8» &x&f&f&9&c&e&eKORDY: &8[&fx: %d, y: %d, z: %d&8]";
+
+        return String.format(messageFormat, player.getName(),
                 !meta.hasDisplayName() ? "" : " &8» &x&f&f&9&c&e&eNAZWA: &8[&f" + name + "&8]\n",
                 lore.isEmpty() ? "" : " &8» &x&f&f&9&c&e&eOPIS: &8[&f" + lore + "&8]\n",
                 enchantments.isEmpty() ? "" : " &8» &x&f&f&9&c&e&eENCHANT: &8[&f" + enchantments + "&8]\n",
-                itemTypeName,
-                player.getWorld().getName(),
+                itemTypeName, player.getWorld().getName(),
                 (int) player.getLocation().getX(), (int) player.getLocation().getY(), (int) player.getLocation().getZ());
     }
 }
