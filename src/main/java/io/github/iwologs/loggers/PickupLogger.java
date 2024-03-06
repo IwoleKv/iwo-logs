@@ -1,4 +1,4 @@
-package io.github.iwologs.listeners;
+package io.github.iwologs.loggers;
 
 import io.github.iwologs.options.*;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;

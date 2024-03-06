@@ -1,7 +1,7 @@
 package io.github.iwologs;
 import io.github.iwologs.commands.Hello;
 import io.github.iwologs.listeners.JoinListener;
-import io.github.iwologs.listeners.PickupLogger;
+import io.github.iwologs.loggers.PickupLogger;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.Objects;
